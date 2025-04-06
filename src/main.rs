@@ -4,7 +4,7 @@ mod grid;
 mod ui;
 
 use grid::Grid;
-use ui::Button;
+use ui::UI;
 
 const GRID_WINDOW_SIZE: usize = 1000;
 const GRID_SIZE: usize = 25;
@@ -20,17 +20,8 @@ fn main() {
         .build();
 
     let mut grid: Grid = Grid::new(GRID_WINDOW_SIZE, GRID_SIZE, SQUARE_SIZE, 0, 0);
-    let mut button: Button = Button::new(
-        1000,
-        0,
-        200,
-        100,
-        "Hello, World",
-        Color::WHITE,
-        Color::BLACK,
-        Color::WHEAT,
-        Box::new(|| println!("Button was clicked!")),
-    );
+    let mut ui: UI = UI::new();
+
     while !rl.window_should_close() {
         // event polling
         let mouse_position = rl.get_mouse_position();
@@ -44,7 +35,7 @@ fn main() {
             grid.highlight_cell(row, column);
         }
 
-        button.poll_events(&mut rl);
+        ui.poll_events(&mut rl);
 
         // Start rendering
         let mut d = rl.begin_drawing(&thread);
@@ -54,6 +45,30 @@ fn main() {
         grid.draw(&mut d);
 
         // draw button
-        button.render(&mut d);
+        ui.button(
+            &mut d,
+            1000,
+            0,
+            200,
+            50,
+            "Draw Walls",
+            Color::WHITE,
+            Color::BLACK,
+            Color::WHEAT,
+            Box::new(|| println!("Drawing walls")),
+        );
+
+        ui.button(
+            &mut d,
+            1000,
+            52,
+            200,
+            50,
+            "Draw Goal",
+            Color::WHITE,
+            Color::BLACK,
+            Color::WHEAT,
+            Box::new(|| println!("Drawing goals")),
+        );
     }
 }
