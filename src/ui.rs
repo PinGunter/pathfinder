@@ -31,7 +31,7 @@ impl UI {
         text_color: Color,
         background_color: Color,
         border_color: Color,
-        on_click: Box<dyn Fn() + 'a>,
+        on_click: &mut dyn FnMut(),
     ) {
         let is_hovered = if (self.mouse_position.x as i32) > pos_x
             && (self.mouse_position.x as i32) < pos_x + width

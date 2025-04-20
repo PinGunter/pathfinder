@@ -1,15 +1,29 @@
 use raylib::prelude::*;
 use std::ops::{Index, IndexMut};
 
+struct Cell {
+    pub row: usize,
+    pub column: usize,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum CellType {
+    EMPTY,
+    WALL,
+    START,
+    GOAL,
+}
+
 pub struct Grid {
     window_size: usize,
     grid_size: usize,
     square_size: usize,
     offset_x: usize,
     offset_y: usize,
-    grid: Vec<Vec<bool>>,
-    highlight_row: Option<usize>,
-    highligt_column: Option<usize>,
+    grid: Vec<Vec<CellType>>,
+    highlight: Option<Cell>,
+    goal: Option<Cell>,
+    start: Option<Cell>,
 }
 
 impl Grid {
@@ -26,9 +40,10 @@ impl Grid {
             square_size,
             offset_x,
             offset_y,
-            grid: vec![vec![false; grid_size]; grid_size],
-            highlight_row: None,
-            highligt_column: None,
+            grid: vec![vec![CellType::EMPTY; grid_size]; grid_size],
+            highlight: None,
+            goal: None,
+            start: None,
         }
     }
 
@@ -37,11 +52,25 @@ impl Grid {
             && (mouse_pos.y as usize) < self.window_size;
     }
 
-    pub fn set_cell(&mut self, state: bool, row: usize, column: usize) {
+    pub fn set_cell(&mut self, state: CellType, row: usize, column: usize) {
+        if state == CellType::GOAL {
+            if self.goal.is_some() {
+                self.grid[self.goal.as_ref().unwrap().row][self.goal.as_ref().unwrap().column] =
+                    CellType::EMPTY;
+            }
+            self.goal = Some(Cell { row, column });
+        }
+        if state == CellType::START {
+            if self.start.is_some() {
+                self.grid[self.start.as_ref().unwrap().row][self.start.as_ref().unwrap().column] =
+                    CellType::EMPTY;
+            }
+            self.start = Some(Cell { row, column });
+        }
         self.grid[row][column] = state;
     }
 
-    pub fn get_cell(&self, row: usize, column: usize) -> bool {
+    pub fn get_cell(&self, row: usize, column: usize) -> CellType {
         return self.grid[row][column];
     }
 
@@ -62,31 +91,38 @@ impl Grid {
     }
 
     pub fn highlight_cell(&mut self, row: usize, column: usize) {
-        self.highlight_row = Some(row);
-        self.highligt_column = Some(column);
+        self.highlight = Some(Cell { row, column });
     }
 
-    pub fn toggle_cell(&mut self, row: usize, column: usize) {
-        self.grid[row][column] = !self.grid[row][column];
+    fn cell_type_to_color(&self, cell_type: CellType) -> Color {
+        match cell_type {
+            CellType::EMPTY => Color::WHITE,
+            CellType::GOAL => Color::RED,
+            CellType::START => Color::GREEN,
+            CellType::WALL => Color::WHITE,
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.grid = vec![vec![CellType::EMPTY; self.grid_size]; self.grid_size];
     }
 
     pub fn draw(&self, d: &mut RaylibDrawHandle<'_>) {
         let mut opacity: f32;
         for row in 0..self.grid_size {
             for column in 0..self.grid_size {
-                opacity = if self.highlight_row == Some(row) && self.highligt_column == Some(column)
-                {
-                    1.0
-                } else {
-                    0.3
+                opacity = match &self.highlight {
+                    Some(cell) if cell.row == row && cell.column == column => 1.0,
+                    _ => 0.3,
                 };
-                let fill = self.grid[row][column];
+                let fill = self.grid[row][column] != CellType::EMPTY;
                 self.draw_square(
                     d,
                     column * self.square_size,
                     row * self.square_size,
                     self.square_size,
-                    Color::WHITE.alpha(if fill { 1.0 } else { opacity }),
+                    self.cell_type_to_color(self.grid[row][column])
+                        .alpha(if fill { 1.0 } else { opacity }),
                     fill,
                 );
             }
@@ -95,7 +131,7 @@ impl Grid {
 }
 
 impl Index<usize> for Grid {
-    type Output = Vec<bool>;
+    type Output = Vec<CellType>;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.grid[index]

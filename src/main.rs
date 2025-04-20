@@ -12,6 +12,13 @@ const SQUARE_SIZE: usize = GRID_WINDOW_SIZE / GRID_SIZE;
 const WINDOW_W: i32 = GRID_WINDOW_SIZE as i32 + 200;
 const WINDOW_H: i32 = GRID_WINDOW_SIZE as i32;
 
+enum ClickMode {
+    NONE,
+    START,
+    WALL,
+    GOAL,
+}
+
 fn main() {
     assert!((GRID_WINDOW_SIZE as f64 / GRID_SIZE as f64) == SQUARE_SIZE as f64);
     let (mut rl, thread) = raylib::init()
@@ -21,6 +28,7 @@ fn main() {
 
     let mut grid: Grid = Grid::new(GRID_WINDOW_SIZE, GRID_SIZE, SQUARE_SIZE, 0, 0);
     let mut ui: UI = UI::new();
+    let mut click_mode: ClickMode = ClickMode::NONE;
 
     while !rl.window_should_close() {
         // event polling
@@ -30,7 +38,12 @@ fn main() {
             let row = mouse_position.y as usize / SQUARE_SIZE;
             let column = mouse_position.x as usize / SQUARE_SIZE;
             if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
-                grid.toggle_cell(row, column);
+                match click_mode {
+                    ClickMode::START => grid.set_cell(grid::CellType::START, row, column),
+                    ClickMode::WALL => grid.set_cell(grid::CellType::WALL, row, column),
+                    ClickMode::GOAL => grid.set_cell(grid::CellType::GOAL, row, column),
+                    _ => {}
+                }
             }
             grid.highlight_cell(row, column);
         }
@@ -47,28 +60,66 @@ fn main() {
         // draw button
         ui.button(
             &mut d,
-            1000,
+            1001,
             0,
-            200,
+            198,
+            50,
+            "Place starting \nplace",
+            Color::WHITE,
+            Color::BLACK,
+            Color::WHEAT,
+            &mut || click_mode = ClickMode::START,
+        );
+
+        ui.button(
+            &mut d,
+            1001,
+            52,
+            198,
             50,
             "Draw Walls",
             Color::WHITE,
             Color::BLACK,
             Color::WHEAT,
-            Box::new(|| println!("Drawing walls")),
+            &mut || click_mode = ClickMode::WALL,
         );
 
         ui.button(
             &mut d,
-            1000,
-            52,
-            200,
+            1001,
+            104,
+            198,
             50,
             "Draw Goal",
             Color::WHITE,
             Color::BLACK,
             Color::WHEAT,
-            Box::new(|| println!("Drawing goals")),
+            &mut || click_mode = ClickMode::GOAL,
+        );
+
+        ui.button(
+            &mut d,
+            1001,
+            156,
+            198,
+            50,
+            "Clear",
+            Color::WHITE,
+            Color::BLACK,
+            Color::WHEAT,
+            &mut || grid.clear(),
+        );
+        ui.button(
+            &mut d,
+            1001,
+            208,
+            198,
+            50,
+            "START",
+            Color::WHITE,
+            Color::BLACK,
+            Color::WHEAT,
+            &mut || println!("..."),
         );
     }
 }
