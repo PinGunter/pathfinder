@@ -1,8 +1,9 @@
+use pathfinding::a_star;
 use raylib::prelude::*;
 
 mod grid;
+mod pathfinding;
 mod ui;
-
 use grid::Grid;
 use ui::UI;
 
@@ -35,8 +36,8 @@ fn main() {
         let mouse_position = rl.get_mouse_position();
 
         if grid.mouse_in_grid(mouse_position) {
-            let row = mouse_position.y as usize / SQUARE_SIZE;
-            let column = mouse_position.x as usize / SQUARE_SIZE;
+            let row = mouse_position.y as i32 / SQUARE_SIZE as i32;
+            let column = mouse_position.x as i32 / SQUARE_SIZE as i32;
             if rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_LEFT) {
                 match click_mode {
                     ClickMode::START => grid.set_cell(grid::CellType::START, row, column),
@@ -119,7 +120,20 @@ fn main() {
             Color::WHITE,
             Color::BLACK,
             Color::WHEAT,
-            &mut || println!("..."),
+            &mut || {
+                let t_path = &a_star(
+                    grid.get_start().unwrap_or_default(),
+                    grid.get_goal().unwrap_or_default(),
+                    &grid,
+                );
+                for cell in t_path {
+                    println!("{}, {}", cell.row, cell.column);
+                    grid.set_cell(grid::CellType::PATH, cell.row, cell.column);
+                }
+                if t_path.is_empty() {
+                    println!("No possible path found");
+                }
+            },
         );
     }
 }

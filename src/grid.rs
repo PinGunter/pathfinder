@@ -1,9 +1,10 @@
 use raylib::prelude::*;
 use std::ops::{Index, IndexMut};
 
-struct Cell {
-    pub row: usize,
-    pub column: usize,
+#[derive(Eq, PartialEq, Hash, Clone, Copy, Default)]
+pub struct Cell {
+    pub row: i32,
+    pub column: i32,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -12,6 +13,7 @@ pub enum CellType {
     WALL,
     START,
     GOAL,
+    PATH,
 }
 
 pub struct Grid {
@@ -52,22 +54,22 @@ impl Grid {
             && (mouse_pos.y as usize) < self.window_size;
     }
 
-    pub fn set_cell(&mut self, state: CellType, row: usize, column: usize) {
+    pub fn set_cell(&mut self, state: CellType, row: i32, column: i32) {
         if state == CellType::GOAL {
             if self.goal.is_some() {
-                self.grid[self.goal.as_ref().unwrap().row][self.goal.as_ref().unwrap().column] =
-                    CellType::EMPTY;
+                self.grid[self.goal.as_ref().unwrap().row as usize]
+                    [self.goal.as_ref().unwrap().column as usize] = CellType::EMPTY;
             }
             self.goal = Some(Cell { row, column });
         }
         if state == CellType::START {
             if self.start.is_some() {
-                self.grid[self.start.as_ref().unwrap().row][self.start.as_ref().unwrap().column] =
-                    CellType::EMPTY;
+                self.grid[self.start.as_ref().unwrap().row as usize]
+                    [self.start.as_ref().unwrap().column as usize] = CellType::EMPTY;
             }
             self.start = Some(Cell { row, column });
         }
-        self.grid[row][column] = state;
+        self.grid[row as usize][column as usize] = state;
     }
 
     pub fn get_cell(&self, row: usize, column: usize) -> CellType {
@@ -90,7 +92,7 @@ impl Grid {
         }
     }
 
-    pub fn highlight_cell(&mut self, row: usize, column: usize) {
+    pub fn highlight_cell(&mut self, row: i32, column: i32) {
         self.highlight = Some(Cell { row, column });
     }
 
@@ -100,6 +102,7 @@ impl Grid {
             CellType::GOAL => Color::RED,
             CellType::START => Color::GREEN,
             CellType::WALL => Color::WHITE,
+            CellType::PATH => Color::BLUE,
         }
     }
 
@@ -112,7 +115,7 @@ impl Grid {
         for row in 0..self.grid_size {
             for column in 0..self.grid_size {
                 opacity = match &self.highlight {
-                    Some(cell) if cell.row == row && cell.column == column => 1.0,
+                    Some(cell) if cell.row as usize == row && cell.column as usize == column => 1.0,
                     _ => 0.3,
                 };
                 let fill = self.grid[row][column] != CellType::EMPTY;
@@ -127,6 +130,18 @@ impl Grid {
                 );
             }
         }
+    }
+
+    pub fn get_start(&self) -> Option<Cell> {
+        return self.start;
+    }
+
+    pub fn get_goal(&self) -> Option<Cell> {
+        return self.goal;
+    }
+
+    pub fn get_grid_size(&self) -> usize {
+        return self.grid_size;
     }
 }
 
